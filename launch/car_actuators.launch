@@ -1,0 +1,7 @@
+<launch>
+
+ <!-- The drive_bot node -->
+  <node name="drive_actuators" type="drive_actuators" pkg="car_actuators" output="screen">
+  </node>
+
+</launch>
