@@ -1,15 +1,19 @@
 #include "ros/ros.h"
-#include "geometry_msgs/Twist.h"
+#include "std_msgs/Float64.h"
 
 #include <pigpiod_if2.h>
 
 int pi;
 
 // actuators callback
-void drive_callback(const geometry_msgs::Twist twist)
+void steering_callback(const std_msgs::Float64 msg)
 {
-    set_servo_pulsewidth(pi, 23, 1500 + 500 * twist.linear.x);
-    set_servo_pulsewidth(pi, 24, 1500 + 500 * twist.angular.z);
+    set_servo_pulsewidth(pi, 24, 1500 + 500 * msg.data);
+}
+
+void throttle_callback(const std_msgs::Float64 msg)
+{
+    set_servo_pulsewidth(pi, 23, 1500 + 500 * msg.data);
 }
 
 int main(int argc, char** argv)
@@ -25,7 +29,8 @@ int main(int argc, char** argv)
     set_servo_pulsewidth(pi, 24, 1500);
 
     // Subscribe to /actuator/drive
-    ros::Subscriber steering = n.subscribe("/actuator/drive", 1, drive_callback);
+    ros::Subscriber steering = n.subscribe("/actuator/steering", 1, steering_callback);
+    ros::Subscriber throttle = n.subscribe("/actuator/throttle", 1, throttle_callback);
 
     // Handle ROS communication events
     ros::spin();

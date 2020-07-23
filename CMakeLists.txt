@@ -213,5 +213,4 @@ target_link_libraries(drive_actuators
   pigpiod_if2
 )
 add_dependencies(drive_actuators ${car_actuators_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} pigpiod_if2)
-#add_dependencies(drive_actuators car_actuators_generate_messages_cpp)
 
