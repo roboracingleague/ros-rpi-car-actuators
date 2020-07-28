@@ -3,17 +3,48 @@
 
 #include <pigpiod_if2.h>
 
-int pi;
+
+class Servo
+{
+    int pi, gpio, middle = 1500, amplitude = 500;
+    double offset = 0.0;
+
+public:
+    void update(double value);
+
+    Servo(int in_pi, std::string prefix);
+};
+
+void Servo::update(double value)
+{
+    int width = (value + offset) * amplitude + middle;
+    set_servo_pulsewidth(pi, gpio, width);
+}
+
+Servo::Servo(int in_pi, std::string prefix)
+{
+    ros::NodeHandle pH("~" + prefix);
+
+    pi = in_pi;
+    pH.getParam("gpio", gpio);
+    pH.param("offset", offset, 0.0);
+
+    set_mode(pi, gpio, PI_OUTPUT);
+
+    update(0.0);
+}
+
+Servo *steering, *throttle;
 
 // actuators callback
 void steering_callback(const std_msgs::Float64 msg)
 {
-    set_servo_pulsewidth(pi, 24, 1500 + 500 * msg.data);
+    steering->update(msg.data);
 }
 
 void throttle_callback(const std_msgs::Float64 msg)
 {
-    set_servo_pulsewidth(pi, 23, 1500 + 500 * msg.data);
+    throttle->update(msg.data);
 }
 
 int main(int argc, char** argv)
@@ -23,10 +54,10 @@ int main(int argc, char** argv)
     ros::NodeHandle n;
 
     // Init GPIO
-    pi = pigpio_start(NULL, NULL);
+    int pi = pigpio_start(NULL, NULL);
 
-    set_servo_pulsewidth(pi, 23, 1500);
-    set_servo_pulsewidth(pi, 24, 1500);
+    steering = new Servo(pi, "steering");
+    throttle = new Servo(pi, "throttle");
 
     // Subscribe to /actuator/drive
     ros::Subscriber steering = n.subscribe("/actuator/steering", 1, steering_callback);
@@ -36,6 +67,9 @@ int main(int argc, char** argv)
     ros::spin();
 
     pigpio_stop(pi);
+
+    delete steering;
+    delete throttle;
 
     return 0;
 }

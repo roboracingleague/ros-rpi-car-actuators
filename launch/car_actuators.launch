@@ -1,7 +1,10 @@
 <launch>
 
- <!-- The drive_bot node -->
-  <node name="drive_actuators" type="drive_actuators" pkg="car_actuators" output="screen">
+  <node name="drive_actuators" type="drive_actuators" pkg="car_actuators" output="screen" respawn="true">
+    <param name="steering/gpio" value="24" />
+    <param name="steering/offset" value="-0.1" />
+    <param name="throttle/gpio" value="23" />
+    <param name="throttle/offset" value="0.05" />
   </node>
 
 </launch>
