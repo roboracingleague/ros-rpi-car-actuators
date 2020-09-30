@@ -1,6 +1,8 @@
 #include "ros/ros.h"
+#include <dynamic_reconfigure/server.h>
 #include "std_msgs/Float64.h"
 #include "car_actuators/Stop.h"
+#include "car_actuators/ServoConfig.h"
 
 #include <pigpiod_if2.h>
 
@@ -8,19 +10,52 @@ double odom = 0.0, odom_limit = 0.2;
 
 class Servo
 {
-    int pi, gpio, middle = 1500, amplitude = 500;
-    double offset = 0.0;
+    bool first_reconfig = true;
+    int pi, gpio, middle = 1500;
+    dynamic_reconfigure::Server<car_actuators::ServoConfig> *dyn_conf_srv;
 
+    double offset = 0.0;
+    int min_value = 1000, max_value = 2000;
+
+    void reconfigure_callback(car_actuators::ServoConfig &config, uint32_t level);
 public:
     void update(double value);
 
     Servo(int in_pi, std::string prefix);
+    ~Servo();
 };
 
 void Servo::update(double value)
 {
+    int amplitude;
+    if (value >= 0)
+    {
+         amplitude = max_value - middle;
+    } 
+    else 
+    {
+         amplitude = middle - min_value;
+    }
     int width = (value + offset) * amplitude + middle;
     set_servo_pulsewidth(pi, gpio, width);
+}
+
+void Servo::reconfigure_callback(car_actuators::ServoConfig &config, uint32_t level)
+{
+    if (first_reconfig)
+    {
+        config.min_value = min_value;
+        config.max_value = max_value;
+        config.offset = offset;
+    
+        first_reconfig = false;
+    } 
+    else 
+    {
+        min_value = config.min_value;
+        max_value = config.max_value;
+        offset = config.offset;
+    }
 }
 
 Servo::Servo(int in_pi, std::string prefix)
@@ -30,10 +65,23 @@ Servo::Servo(int in_pi, std::string prefix)
     pi = in_pi;
     pH.getParam("gpio", gpio);
     pH.param("offset", offset, 0.0);
+    pH.param("min_value", min_value, 1000);
+    pH.param("max_value", max_value, 2000);
 
     set_mode(pi, gpio, PI_OUTPUT);
 
+    // Dynamic params
+    dyn_conf_srv = new dynamic_reconfigure::Server<car_actuators::ServoConfig>(pH);
+    dynamic_reconfigure::Server<car_actuators::ServoConfig>::CallbackType f;
+    f = boost::bind(&Servo::reconfigure_callback, this, _1, _2);
+    dyn_conf_srv->setCallback(f);
+
     update(0.0);
+}
+
+Servo::~Servo()
+{
+    delete dyn_conf_srv;
 }
 
 Servo *steering, *throttle;

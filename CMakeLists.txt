@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   roscpp
   std_msgs
+  dynamic_reconfigure
 )
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR} )
@@ -88,11 +89,10 @@ generate_messages(
 ##   * uncomment the "generate_dynamic_reconfigure_options" section below
 ##     and list every .cfg file to be processed
 
-## Generate dynamic reconfigure parameters in the 'cfg' folder
-# generate_dynamic_reconfigure_options(
-#   cfg/DynReconf1.cfg
-#   cfg/DynReconf2.cfg
-# )
+# Generate dynamic reconfigure parameters in the 'cfg' folder
+generate_dynamic_reconfigure_options(
+  cfg/Servo.cfg
+)
 
 ###################################
 ## catkin specific configuration ##
@@ -120,6 +120,7 @@ include_directories(
 # include
  ${catkin_INCLUDE_DIRS}
  ${pigpio_INCLUDE_DIRS}
+ ${dynamic_reconfigure_PACKAGE_PATH}/cmake/cfgbuild.cmake
 )
 
 ## Declare a C++ library
@@ -212,5 +213,4 @@ target_link_libraries(drive_actuators
   ${catkin_LIBRARIES}
   pigpiod_if2
 )
-add_dependencies(drive_actuators ${car_actuators_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} car_actuators_generate_messages_cpp pigpiod_if2)
-
+add_dependencies(drive_actuators ${car_actuators_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} car_actuators_generate_messages_cpp pigpiod_if2 ${PROJECT_NAME}_gencfg)
